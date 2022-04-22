@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -31,7 +33,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   late int _currentIndex;
   @override
   void initState() {
-    _currentIndex = 0 ;
+    _currentIndex = 0;
     _scrollController = ScrollController();
     _pageController = PageController(initialPage: _currentIndex);
     //_tabController = TabController(initialIndex: 0, vsync: this, length: 10);
@@ -40,6 +42,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
     _tabController1.addListener(_handleTabSelection);
   }
+
   _handleTabSelection() {
     setState(() {
       _currentIndex = _pageController.index;
@@ -53,58 +56,19 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         controller: _scrollController,
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
           return <Widget>[
-            SliverAppBar(
-              title: Text(widget.title),
+            SliverPersistentHeader(
               pinned: true,
-              floating: true,
-              snap: false,
-              forceElevated: innerBoxIsScrolled,
-             /* bottom: TabBar(
-                isScrollable: true,
-                tabs: const <Tab>[
-                  Tab(text: "Page 1"),
-                  Tab(text: "Page 2"),
-                  Tab(text: "Page 1"),
-                  Tab(text: "Page 2"),
-                  Tab(text: "Page 1"),
-                  Tab(text: "Page 2"),
-                  Tab(text: "Page 1"),
-                  Tab(text: "Page 2"),
-                  Tab(text: "Page 1"),
-                  Tab(text: "Page 2"),
-                ],
-                controller: _tabController,
-              ),*/
+              floating: false,
+              delegate: PersistantHeader(title: 'My app'),
             ),
-            SliverToBoxAdapter(
-              child: TabBar(
-                tabs: const <Tab>[
-                  Tab(text: "Page 1"),
-                  Tab(text: "Page 2"),
-                ],
-                controller: _tabController1,
-              ),
-            )
           ];
         },
-        body:
-        NestedScrollView(
-          controller: _scrollController,
-          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-            return <Widget>[
-              SliverToBoxAdapter(
-                child: Text('test'),)
-            ];
-
-          },
-          body: PageView(
-            controller: _pageController,
-
-            children: <Widget>[
-              _pageView(),
-              _pageView(),
-            ],
-          ),
+        body: PageView(
+          controller: _pageController,
+          children: <Widget>[
+            _pageView(),
+            _pageView(),
+          ],
         ),
       ),
     );
@@ -123,4 +87,85 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       },
     );
   }
+}
+
+class PersistantHeader extends SliverPersistentHeaderDelegate {
+  final double minTopBarHeight = 100;
+  final double maxTopBarHeight = 200;
+  final String title;
+  final IconData? icon;
+
+  PersistantHeader({
+    required this.title,
+    this.icon,
+  });
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    var shrinkFactor = min(1, shrinkOffset / (maxExtent - minExtent));
+    var vleft = MediaQuery.of(context).size.width;
+    print(shrinkFactor);
+    var topBar = Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        alignment: Alignment.center,
+        height: max(maxTopBarHeight * (1 - shrinkFactor * 0.7), minTopBarHeight),
+        width: 100,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.headline4!.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(
+              width: 20,
+            ),
+          ],
+        ),
+        decoration: const BoxDecoration(
+            color: Colors.green,
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(36),
+              bottomRight: Radius.circular(36),
+            )),
+      ),
+    );
+    return Stack(
+      fit: StackFit.loose,
+      children: [
+        topBar,
+        Positioned(
+          right: (vleft - (vleft * 0.8)) / 2 ,
+          bottom: 0,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: 10,
+            ),
+            child: Container(
+              alignment: Alignment.center,
+              width: max(MediaQuery.of(context).size.width * 0.8 - shrinkOffset, minExtent - shrinkOffset),
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  double get maxExtent => 230;
+
+  @override
+  double get minExtent => 100;
+
+  @override
+  bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) => true;
 }
